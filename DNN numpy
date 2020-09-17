@@ -1,0 +1,195 @@
+import numpy as np
+import matplotlib.pyplot as plt
+def sigmod(x):
+
+    s = 1 / (1 +np.exp(-x))
+    return s
+def sigmod_ni(x):
+    s = sigmod(x) *(1- sigmod(x))
+    return s
+
+# def relu(x):
+#     for i in range(len(x)):
+#         for j in range(len(x[i])):
+#             if x[i][j] < 0:
+#                 x[i][j] = 0
+#     return x
+# def relu_ni(x):
+#     for i in range(len(x)):
+#         for j in range(len(x[i])):
+#             if x[i][j] < 0:
+#                 x[i][j] = 0
+#             if x[i][j] > 0:
+#                 x[i][j] = 1
+#     return x
+
+def forward_toward(W1, X, b1, W2, b2):
+    # print("W1",W1)
+    # print("X",X)
+    # print("b1", b1)
+    # print("W2", W2)
+    # print("b2", b2)
+    z1 = np.dot(W1, X) + b1
+
+    print(z1.shape)
+
+    a1 = np.tanh(z1)
+
+    z2 = np.dot(W2, a1) + b2
+
+    print(z2.shape)
+
+    a2 = sigmod(z2)
+
+    cache = {"z1":z1, "a1":a1, "z2":z2, "a2":a2}
+
+    return a2,cache
+
+
+def backward(a2, y,parameters,cache):
+    m = y.shape[1]
+
+    a2 = a2.astype(np.float32)
+
+    # print("y",y)
+
+    y = y.astype(np.float32)
+
+    print("a2",a2)
+    iii = 1-a2
+    iii.round(3)
+
+    # logpro = np.multiply(np.log(a2), y)+np.multiply((1-y), np.log(1-a2))
+    # cost =  np.sum(logpro)* (-1 /m)
+
+    cost = (1/2*m) * np.sum(np.multiply((a2 - y) , (a2 - y)))
+    print("代价函数", cost)
+
+    W1 = parameters['W1']
+    W2 = parameters['W2']
+    x = parameters['x']
+    a1 = cache['a1']
+    a2 = cache['a2']
+    # dz2 = a2 - y
+    dz2 = np.multiply((a2 - y), np.multiply(a2, (a2 - y)))
+
+    dw2 = 1/m * np.dot(dz2 , a1.T)
+    db2 = 1/m * np.sum(dw2,axis=1)
+    g = np.dot(W2.T, dz2)
+    h =1-np.power(a1, 2)
+    # dz1 = y = (np.dot(W2.T, dz2)).astype(np.uint8) * ((1- np.power(a1,2))).astype(np.uint8)
+    dz1 = np.multiply(g, h)
+    dw1 = 1/m * np.dot(dz1, x)
+    db1 = 1/m *np.sum(dz1,axis=1)
+    grads = {"dw2":dw2, "db2":db2, "dw1":dw1, "db1":db1 }
+
+    return grads
+
+# 数据
+
+data_file = open('mnist_test_10.csv', 'r')
+
+data_list = data_file.readlines()
+
+data_file.close()
+
+print('数据长度', len(data_list))
+
+all_values = []
+
+for i in range(len(data_list)):
+
+    l = data_list[i].split(',')
+
+    all_values.append(l)
+
+all_values = np.array(all_values)
+
+result = all_values[:, 0]
+
+input = all_values[:, 1:]
+
+input= np.mat(input)
+result= np.mat(result)
+
+
+W1 = np.random.randn(2,784)  #
+b1 =np.zeros((2,1))
+
+W2 = np.random.randn(1,2)
+b2 = np.zeros((1,1))
+
+
+
+W1 = W1.astype(np.float32)
+input = input.astype(np.float32)
+b1 = b1.astype(np.float32)
+W2 = W2.astype(np.float32)
+b2 = b2.astype(np.float32)
+
+
+
+
+parameters = {"W1":W1, "b1":b1, "W2":W2, "b2":b2 , "x":input  }
+
+
+for i in range(10000):
+    print(i)
+    a2, cache = forward_toward(W1, input.T, b1, W2, b2)
+    grads = backward(a2, result, parameters, cache)
+
+    W1 = W1 - 0.1 * grads['dw1']
+    W2 = W2 - 0.1 * grads['dw2']
+    b2 = b2 - 0.1 * grads['db2']
+    b1 = b1 - 0.1 * grads['db1']
+    parameters = {"W1": W1, "b1": b1, "W2": W2, "b2": b2, "x": input}
+
+print(W1.shape)
+print(W2.shape)
+
+
+
+plt.imshow(W1[1].reshape(28,28), interpolation='nearest', cmap='bone', origin='lower')
+
+plt.colorbar(shrink=.92)  # 设置一个颜色指引条
+
+plt.xticks(())
+
+plt.yticks(())
+
+plt.show()
+
+#
+# onehot_encoded = list()
+#
+# for value in result:
+#        letter = [0 for _ in range(10)]
+#        print(value)
+#
+#        letter[int(value)] = 1
+#        onehot_encoded.append(letter)
+#
+# onehot_encoded = np.array(onehot_encoded)
+# input= np.mat(input)
+# onehot_encoded= np.mat(onehot_encoded)
+#
+#
+# print(input.shape)
+# print(onehot_encoded.shape)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
